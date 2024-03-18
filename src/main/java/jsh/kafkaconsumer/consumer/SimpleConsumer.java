@@ -6,6 +6,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.consumer.OffsetCommitCallback;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
@@ -41,7 +42,16 @@ public class SimpleConsumer {
                 log.info("record:{}", record);
                 currentOffset.put(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1, null));
             }
-            consumer.commitAsync();
+            consumer.commitAsync(new OffsetCommitCallback() {
+                @Override
+                public void onComplete(Map<TopicPartition, OffsetAndMetadata> offsets, Exception e) {
+                    if (e != null) {
+                        log.error("Commit failed for offsets {}", offsets, e);
+                    } else {
+                        log.info("Commit succeeded");
+                    }
+                }
+            });
         }
     }
 }

@@ -40,8 +40,8 @@ public class SimpleConsumer {
             for (ConsumerRecord<String, String> record : records) {
                 log.info("record:{}", record);
                 currentOffset.put(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1, null));
-                consumer.commitSync(currentOffset);
             }
+            consumer.commitAsync();
         }
     }
 }

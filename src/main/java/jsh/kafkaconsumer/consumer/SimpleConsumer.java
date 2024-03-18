@@ -1,5 +1,6 @@
 package jsh.kafkaconsumer.consumer;
 
+import jsh.kafkaconsumer.listener.RebalanceListener;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -32,7 +33,7 @@ public class SimpleConsumer {
         configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(configs);
-        consumer.subscribe(List.of(TOPIC_NAME));
+        consumer.subscribe(List.of(TOPIC_NAME), new RebalanceListener());
 
         while (true) {
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1));

@@ -9,6 +9,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.OffsetCommitCallback;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.time.Duration;
@@ -38,24 +39,31 @@ public class SimpleConsumer {
         //consumer.subscribe(List.of(TOPIC_NAME), new RebalanceListener());
         consumer.assign(Collections.singleton(new TopicPartition(TOPIC_NAME, PARTITION_NUMBER)));
 
-        while (true) {
-            ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1));
-            Map<TopicPartition, OffsetAndMetadata> currentOffset = new HashMap<>();
+        try {
+            while (true) {
+                ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1));
+                Map<TopicPartition, OffsetAndMetadata> currentOffset = new HashMap<>();
 
-            for (ConsumerRecord<String, String> record : records) {
-                log.info("record:{}", record);
-                currentOffset.put(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1, null));
-            }
-            consumer.commitAsync(new OffsetCommitCallback() {
-                @Override
-                public void onComplete(Map<TopicPartition, OffsetAndMetadata> offsets, Exception e) {
-                    if (e != null) {
-                        log.error("Commit failed for offsets {}", offsets, e);
-                    } else {
-                        log.info("Commit succeeded");
-                    }
+                for (ConsumerRecord<String, String> record : records) {
+                    log.info("record:{}", record);
+                    currentOffset.put(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1, null));
                 }
-            });
+                consumer.commitAsync(new OffsetCommitCallback() {
+                    @Override
+                    public void onComplete(Map<TopicPartition, OffsetAndMetadata> offsets, Exception e) {
+                        if (e != null) {
+                            log.error("Commit failed for offsets {}", offsets, e);
+                        } else {
+                            log.info("Commit succeeded");
+                        }
+                    }
+                });
+            }
+        } catch (WakeupException e) {
+            log.warn("Wakeup consumer");
+        } finally {
+            log.warn("Consumer close");
+            consumer.close();
         }
     }
 }
